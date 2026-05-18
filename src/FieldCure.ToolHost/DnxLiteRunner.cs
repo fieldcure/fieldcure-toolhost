@@ -82,7 +82,7 @@ public sealed class DnxLiteRunner
         PackageResolutionRequest resolutionRequest = new(
             PackageId: request.PackageId,
             Policy: request.Policy,
-            VersionConstraint: null,
+            VersionConstraint: request.VersionConstraint,
             AllowPrerelease: request.AllowPrerelease,
             ExplicitVersion: request.ExplicitVersion);
 
@@ -100,6 +100,7 @@ public sealed class DnxLiteRunner
             Arguments = request.ToolArguments,
             DotnetMuxerPath = _environment.DotnetMuxerPath,
             AllowRollForward = request.AllowRollForward,
+            AdditionalEnvironment = request.AdditionalEnvironment,
         };
 
         return _launcher.Start(launchRequest);
@@ -141,4 +142,17 @@ public sealed record ToolInvocationRequest
 
     /// <summary>Restrict resolution to a single source. Equivalent to <c>dnx --source</c>.</summary>
     public string? RestrictToSource { get; init; }
+
+    /// <summary>
+    /// Optional NuGet version range to constrain resolution (e.g. <c>"2.*"</c>, <c>"[2.0.0,3.0.0)"</c>).
+    /// Ignored when <see cref="ExplicitVersion"/> is set. When null, the resolver picks the latest
+    /// version permitted by <see cref="Policy"/> and <see cref="AllowPrerelease"/>.
+    /// </summary>
+    public string? VersionConstraint { get; init; }
+
+    /// <summary>
+    /// Optional environment variables to set on the child process. Values of <c>null</c> remove the variable.
+    /// Forwarded to <see cref="Execution.LaunchRequest.AdditionalEnvironment"/> unchanged.
+    /// </summary>
+    public IReadOnlyDictionary<string, string?>? AdditionalEnvironment { get; init; }
 }

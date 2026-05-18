@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
+## v0.1.2 (2026-05-18)
+
+### Changed
+
+- **Library re-pinned to `FieldCure.ToolHost` 0.1.2.** Adds `VersionConstraint` and `AdditionalEnvironment` pass-through on `ToolInvocationRequest` for library embedders. CLI surface unchanged — no new flags, no behavior change. Version bump exists to keep CLI and library on a single shared version line.
+
 ## v0.1.1 (2026-05-18)
 
 ### Fixed

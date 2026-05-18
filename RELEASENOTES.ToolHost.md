@@ -1,5 +1,14 @@
 # Release Notes — FieldCure.ToolHost
 
+## v0.1.2 (2026-05-18)
+
+### Added
+
+- **`ToolInvocationRequest.VersionConstraint`** — optional NuGet version range (e.g. `"2.*"`, `"[2.0.0,3.0.0)"`) is now forwarded to the underlying `PackageResolutionRequest`. Previously the field was absent and the runner pinned major versions only by passing a fully-qualified `ExplicitVersion`. Embedders can now express "latest within major 2" without pre-resolving themselves.
+- **`ToolInvocationRequest.AdditionalEnvironment`** — optional `IReadOnlyDictionary<string, string?>` of environment variables for the child process is now forwarded to `LaunchRequest.AdditionalEnvironment`. Required for scenarios that hand credentials or other secrets to the launched tool via env vars (the same pattern used by stdio MCP servers).
+
+Both fields are pure pass-through additions — backwards compatible. Existing callers that omit the new fields see identical behavior to v0.1.1.
+
 ## v0.1.1 (2026-05-18)
 
 ### Fixed
