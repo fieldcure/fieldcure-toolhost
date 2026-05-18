@@ -22,6 +22,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>dnx;dotnet-tool;nuget;tool-runner;sdk-less;runtime;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>v0.1.0 — Initial MVP. Library API to resolve, extract, and launch .NET tools from NuGet without the .NET SDK. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
   </PropertyGroup>
 

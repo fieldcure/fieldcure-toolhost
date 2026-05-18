@@ -27,6 +27,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>dnx;dotnet-tool;nuget;fcdnx;tool-runner;sdk-less;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.png</PackageIcon>
     <PackageReleaseNotes>v0.1.0 — Initial fcdnx CLI. dnx-compatible flag matrix on the v0.1 surface. See RELEASENOTES.ToolHost.Cli.md on GitHub for the full notes.</PackageReleaseNotes>
   </PropertyGroup>
 
