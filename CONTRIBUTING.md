@@ -19,8 +19,8 @@ here. We will politely close such PRs.
 ## Building from source
 
 ```bash
-git clone https://github.com/FieldCure/ToolHost.git
-cd ToolHost
+git clone https://github.com/fieldcure/fieldcure-toolhost.git
+cd fieldcure-toolhost
 dotnet restore FieldCure.ToolHost.slnx
 dotnet build FieldCure.ToolHost.slnx -c Release
 dotnet test FieldCure.ToolHost.slnx -c Release --filter "Category!=Integration"

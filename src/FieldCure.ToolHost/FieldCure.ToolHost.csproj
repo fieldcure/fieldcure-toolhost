@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <AssemblyName>FieldCure.ToolHost</AssemblyName>
     <RootNamespace>FieldCure.ToolHost</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -23,11 +23,12 @@
     <PackageTags>dnx;dotnet-tool;nuget;tool-runner;sdk-less;runtime;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>v0.1.0 — Initial MVP. Library API to resolve, extract, and launch .NET tools from NuGet without the .NET SDK. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
+    <PackageReleaseNotes>v0.1.1 — Fix projectUrl/repository metadata to point at fieldcure/fieldcure-toolhost. No code changes. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="README.md" Pack="true" PackagePath="" />
+    <None Include="icon.png" Pack="true" PackagePath="" />
   </ItemGroup>
 
   <ItemGroup>

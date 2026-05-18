@@ -23,8 +23,8 @@
     <Company>FieldCure Co., Ltd.</Company>
     <Copyright>Copyright (c) FieldCure Co., Ltd. and contributors.</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/FieldCure/ToolHost</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/FieldCure/ToolHost</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/fieldcure/fieldcure-toolhost</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/fieldcure/fieldcure-toolhost</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>

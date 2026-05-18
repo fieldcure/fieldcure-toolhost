@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost
 
+## v0.1.1 (2026-05-18)
+
+### Fixed
+
+- **Package metadata** — `projectUrl` and `repository` URLs now point at the actual GitHub repository (`fieldcure/fieldcure-toolhost`) instead of the spec's draft path (`FieldCure/ToolHost`, which 404s). No code changes; nupkg contents byte-identical to v0.1.0 except the nuspec URLs.
+
 ## v0.1.0 (2026-05-18)
 
 Initial release.
