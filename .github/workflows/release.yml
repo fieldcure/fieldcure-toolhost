@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  release:
+    if: startsWith(github.event.head_commit.message, 'Release ')
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Create releases
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          MESSAGE=$(printf '%s\n' "$COMMIT_MESSAGE" | head -n 1)
+
+          normalize_name() {
+            case "$1" in
+              ToolHost|FieldCure.ToolHost)
+                echo "ToolHost|FieldCure.ToolHost|RELEASENOTES.ToolHost.md"
+                ;;
+              ToolHost.Cli|FieldCure.ToolHost.Cli|fcdnx)
+                echo "ToolHost.Cli|FieldCure.ToolHost.Cli|RELEASENOTES.ToolHost.Cli.md"
+                ;;
+              *)
+                return 1
+                ;;
+            esac
+          }
+
+          if echo "$MESSAGE" | grep -qE '^Release v[0-9]'; then
+            VERSION=$(echo "$MESSAGE" | sed -n 's/Release v\([0-9]*\.[0-9]*\.[0-9]*\).*/\1/p')
+            TAG="v${VERSION}"
+
+            {
+              echo "# ToolHost"
+              echo ""
+              cat RELEASENOTES.ToolHost.md
+              echo ""
+              echo "---"
+              echo ""
+              echo "# ToolHost.Cli"
+              echo ""
+              cat RELEASENOTES.ToolHost.Cli.md
+            } > RELEASE_BODY.md
+
+            gh release create "$TAG" \
+              --title "v${VERSION}" \
+              --notes-file RELEASE_BODY.md
+          else
+            PAIRS=$(echo "$MESSAGE" | grep -oE '[A-Za-z][A-Za-z0-9.]*\s+v[0-9]+\.[0-9]+\.[0-9]+')
+
+            echo "$PAIRS" | while IFS= read -r pair; do
+              [ -z "$pair" ] && continue
+
+              RAW_NAME=$(echo "$pair" | awk '{print $1}')
+              VERSION=$(echo "$pair" | sed 's/.*v//')
+
+              if ! META=$(normalize_name "$RAW_NAME"); then
+                echo "::warning::Unknown package name '$RAW_NAME', skipping"
+                continue
+              fi
+
+              SLUG=$(echo "$META" | cut -d'|' -f1)
+              TITLE=$(echo "$META" | cut -d'|' -f2)
+              NOTES_FILE=$(echo "$META" | cut -d'|' -f3)
+              TAG="$(echo "$SLUG" | tr '[:upper:]' '[:lower:]')-v${VERSION}"
+
+              if [ ! -f "$NOTES_FILE" ]; then
+                echo "::warning::$NOTES_FILE not found, skipping $RAW_NAME"
+                continue
+              fi
+
+              echo "Creating release: $TITLE v$VERSION (tag: $TAG)"
+              gh release create "$TAG" \
+                --title "$TITLE v${VERSION}" \
+                --notes-file "$NOTES_FILE"
+            done
+          fi

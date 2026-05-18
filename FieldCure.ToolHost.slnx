@@ -1,0 +1,32 @@
+<Solution>
+
+  <Configuration Solution="Debug|Any CPU" />
+  <Configuration Solution="Release|Any CPU" />
+
+  <Folder Name="/docs/">
+    <File Path="README.md" />
+    <File Path="ROADMAP.md" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="SECURITY.md" />
+    <File Path="RELEASENOTES.ToolHost.md" />
+    <File Path="RELEASENOTES.ToolHost.Cli.md" />
+    <File Path="docs/architecture.md" />
+    <File Path="docs/flag-compatibility.md" />
+    <File Path="docs/authenticated-feeds.md" />
+  </Folder>
+
+  <Folder Name="/src/">
+    <Project Path="src/FieldCure.ToolHost/FieldCure.ToolHost.csproj" />
+    <Project Path="src/FieldCure.ToolHost.Cli/FieldCure.ToolHost.Cli.csproj" />
+  </Folder>
+
+  <Folder Name="/tests/">
+    <Project Path="tests/FieldCure.ToolHost.Tests/FieldCure.ToolHost.Tests.csproj" />
+    <Project Path="tests/FieldCure.ToolHost.Cli.Tests/FieldCure.ToolHost.Cli.Tests.csproj" />
+  </Folder>
+
+  <Folder Name="/samples/">
+    <Project Path="samples/ToolHostDemo/ToolHostDemo.csproj" />
+  </Folder>
+
+</Solution>

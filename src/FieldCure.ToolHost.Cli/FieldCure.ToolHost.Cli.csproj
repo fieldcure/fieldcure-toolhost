@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <OutputType>Exe</OutputType>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Version>0.1.0</Version>
+    <AssemblyName>FieldCure.ToolHost.Cli</AssemblyName>
+    <RootNamespace>FieldCure.ToolHost.Cli</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+    <RollForward>LatestMajor</RollForward>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>fcdnx</ToolCommandName>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>FieldCure.ToolHost.Cli</PackageId>
+    <Description>fcdnx — Run .NET tools from NuGet without the .NET SDK. A dnx-compatible CLI bridge for runtime-only environments. Tracking https://github.com/dotnet/sdk/issues/49796 for the eventual official solution.</Description>
+    <Authors>Jong Hyun Kim</Authors>
+    <Company>Fieldcure Co., Ltd.</Company>
+    <Copyright>Copyright (c) 2026 Fieldcure Co., Ltd.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/fieldcure/fieldcure-toolhost</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>dnx;dotnet-tool;nuget;fcdnx;tool-runner;sdk-less;cli</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>v0.1.0 — Initial fcdnx CLI. dnx-compatible flag matrix on the v0.1 surface. See RELEASENOTES.ToolHost.Cli.md on GitHub for the full notes.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FieldCure.ToolHost\FieldCure.ToolHost.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FieldCure.ToolHost.Cli.Tests" />
+  </ItemGroup>
+
+</Project>

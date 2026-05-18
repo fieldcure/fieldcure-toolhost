@@ -1,0 +1,44 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Version>0.1.0</Version>
+    <AssemblyName>FieldCure.ToolHost</AssemblyName>
+    <RootNamespace>FieldCure.ToolHost</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsPackable>true</IsPackable>
+
+    <!-- NuGet Package Metadata -->
+    <PackageId>FieldCure.ToolHost</PackageId>
+    <Description>Run .NET tools from NuGet without the .NET SDK — a dnx-compatible bridge for runtime-only environments (MS Store apps, MSIX, containers, CI bootstrappers). Tracking https://github.com/dotnet/sdk/issues/49796 for the eventual official solution.</Description>
+    <Authors>Jong Hyun Kim</Authors>
+    <Company>Fieldcure Co., Ltd.</Company>
+    <Copyright>Copyright (c) 2026 Fieldcure Co., Ltd.</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/fieldcure/fieldcure-toolhost</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>dnx;dotnet-tool;nuget;tool-runner;sdk-less;runtime;cli</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>v0.1.0 — Initial MVP. Library API to resolve, extract, and launch .NET tools from NuGet without the .NET SDK. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NuGet.Protocol" />
+    <PackageReference Include="NuGet.Packaging" />
+    <PackageReference Include="NuGet.Configuration" />
+    <PackageReference Include="NuGet.Credentials" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="FieldCure.ToolHost.Tests" />
+  </ItemGroup>
+
+</Project>
