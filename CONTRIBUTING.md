@@ -16,6 +16,24 @@ intentionally narrow:
 If you want a feature outside `dnx` parity, the right place is `dotnet/sdk`, not
 here. We will politely close such PRs.
 
+## Versioning policy
+
+`FieldCure.ToolHost` and `FieldCure.ToolHost.Cli` ship in **lock-step** — every
+release bumps both `<Version>` properties to the same number, even when only
+one of them has code changes.
+
+The reason isn't NuGet metadata: `FieldCure.ToolHost.Cli` is `PackAsTool=true`,
+which embeds the library DLL inside the tool nupkg and **does not declare
+`FieldCure.ToolHost` as a dependency**. NuGet treats the two packages as
+independent — but the CLI's bytes are always built against one specific
+library version, so the two are coupled at compile time.
+
+Without the lock-step rule a maintainer could push a `0.3.x` CLI built against
+a `0.2.x` library and nothing on the NuGet side would warn the user that the
+combination is incoherent. Keeping the versions aligned makes provenance
+trivially auditable: "the library and CLI named `0.3.0` were built from the
+same commit." See `scripts/README.md` for the operational checklist.
+
 ## Building from source
 
 ```bash

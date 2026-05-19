@@ -1,5 +1,20 @@
 # Scripts — Maintainers Only
 
+## Lock-step versioning rule
+
+`FieldCure.ToolHost.Cli` is `PackAsTool=true`. It embeds the library DLL inside
+the tool nupkg and **does not advertise `FieldCure.ToolHost` as a NuGet
+dependency** — to NuGet, the two packages look independent. To keep them
+trivially auditable, every release bumps both `<Version>` properties to the
+same number, even when only one project has code changes.
+
+`publish-nuget.ps1` (the default path) builds and pushes both together, so the
+lock-step is automatic. Use `publish-toolhost.ps1` / `publish-cli.ps1` (single
+publish) only for prereleases or hotfixes — and bump the partner csproj
+`<Version>` in the same commit so the next regular release stays aligned.
+
+See `CONTRIBUTING.md` → "Versioning policy" for the rationale.
+
 ## Publish Scripts
 
 | Script | Packages |
