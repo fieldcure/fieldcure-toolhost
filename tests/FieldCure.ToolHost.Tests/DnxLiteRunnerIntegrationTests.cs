@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text;
 
 using FluentAssertions;
@@ -20,7 +20,7 @@ public sealed class DnxLiteRunnerIntegrationTests
             return;
         }
 
-        DotnetEnvironment environment = await DotnetEnvironment.DetectAsync();
+        var environment = await DotnetEnvironment.DetectAsync();
         DnxLiteRunner runner = new(environment);
 
         ToolInvocationRequest request = new()
@@ -30,7 +30,7 @@ public sealed class DnxLiteRunnerIntegrationTests
             Policy = ToolVersionPolicy.AlwaysLatest,
         };
 
-        using Process process = await runner.StartAsync(request);
+        using var process = await runner.StartAsync(request);
 
         StringBuilder stdout = new();
         process.OutputDataReceived += (_, e) =>

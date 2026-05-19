@@ -9,6 +9,7 @@ using NuGet.Packaging;
 using NuGet.Packaging.Core;
 using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
+using NuGet.Versioning;
 
 using INuGetLogger = NuGet.Common.ILogger;
 using NuGetLogMessage = NuGet.Common.ILogMessage;
@@ -23,9 +24,9 @@ namespace FieldCure.ToolHost.Extraction;
 /// </summary>
 public sealed class NuGetToolExtractor : IToolExtractor
 {
-    private static readonly NuGetFramework HostFramework = NuGetFramework.Parse("net10.0");
-
     private readonly DotnetEnvironment _environment;
+    private readonly NuGetFramework _hostFramework;
+    private readonly string? _nugetConfigFile;
     private readonly ILogger<NuGetToolExtractor> _logger;
     private readonly INuGetLogger _nugetLogger;
 
@@ -33,9 +34,23 @@ public sealed class NuGetToolExtractor : IToolExtractor
     /// <param name="environment">Detected host environment, used for the NuGet global folder and host RID.</param>
     /// <param name="logger">Optional logger.</param>
     public NuGetToolExtractor(DotnetEnvironment environment, ILogger<NuGetToolExtractor>? logger = null)
+        : this(environment, nugetConfigFile: null, logger)
+    {
+    }
+
+    /// <summary>Constructs an extractor bound to the supplied host environment and NuGet configuration file.</summary>
+    /// <param name="environment">Detected host environment, used for the NuGet global folder and host RID.</param>
+    /// <param name="nugetConfigFile">Optional path to the NuGet.Config used during resolution.</param>
+    /// <param name="logger">Optional logger.</param>
+    public NuGetToolExtractor(
+        DotnetEnvironment environment,
+        string? nugetConfigFile,
+        ILogger<NuGetToolExtractor>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(environment);
         _environment = environment;
+        _hostFramework = DetermineHostFramework(environment);
+        _nugetConfigFile = nugetConfigFile;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<NuGetToolExtractor>.Instance;
         _nugetLogger = new ForwardingNuGetLogger(_logger);
     }
@@ -69,7 +84,7 @@ public sealed class NuGetToolExtractor : IToolExtractor
             throw new NoCompatibleToolException(resolution.PackageId,
                 $"Package '{resolution.PackageId}' is missing DotnetToolSettings.xml at '{settingsXmlPath}'.");
         }
-        DotnetToolSettings toolSettings = DotnetToolSettings.ParseFile(settingsXmlPath);
+        var toolSettings = DotnetToolSettings.ParseFile(settingsXmlPath);
 
         return new ExtractedToolLayout(packagePath, toolsFolder, tfm, rid, toolSettings);
     }
@@ -82,16 +97,16 @@ public sealed class NuGetToolExtractor : IToolExtractor
         using SourceCacheContext cacheContext = new();
         PackageDownloadContext downloadContext = new(cacheContext, downloadFolder, directDownload: false);
 
-        ISettings settings = Settings.LoadDefaultSettings(root: null);
-        List<SourceRepository> sources = BuildSources(settings, resolution.SourceUrl);
+        var settings = LoadSettings(_nugetConfigFile);
+        var sources = BuildSources(settings, resolution.SourceUrl);
 
-        List<Exception> failures = new();
-        foreach (SourceRepository repository in sources)
+        List<Exception> failures = [];
+        foreach (var repository in sources)
         {
             try
             {
-                DownloadResource downloadResource = await repository.GetResourceAsync<DownloadResource>(ct).ConfigureAwait(false);
-                using DownloadResourceResult result = await downloadResource
+                var downloadResource = await repository.GetResourceAsync<DownloadResource>(ct).ConfigureAwait(false);
+                using var result = await downloadResource
                     .GetDownloadResourceResultAsync(identity, downloadContext, globalFolder, _nugetLogger, ct)
                     .ConfigureAwait(false);
 
@@ -120,17 +135,17 @@ public sealed class NuGetToolExtractor : IToolExtractor
     private static List<SourceRepository> BuildSources(ISettings settings, string preferredSourceUrl)
     {
         PackageSourceProvider provider = new(settings);
-        List<PackageSource> enabled = provider.LoadPackageSources().Where(s => s.IsEnabled).ToList();
+        var enabled = provider.LoadPackageSources().Where(s => s.IsEnabled).ToList();
 
         // Try the preferred source first if it is among the configured sources.
-        PackageSource? preferred = enabled.FirstOrDefault(s =>
+        var preferred = enabled.FirstOrDefault(s =>
             string.Equals(s.Source, preferredSourceUrl, StringComparison.OrdinalIgnoreCase));
 
-        List<SourceRepository> ordered = new();
+        List<SourceRepository> ordered = [];
         if (preferred is not null)
         {
             ordered.Add(Repository.Factory.GetCoreV3(preferred));
-            foreach (PackageSource other in enabled.Where(s => s != preferred))
+            foreach (var other in enabled.Where(s => s != preferred))
             {
                 ordered.Add(Repository.Factory.GetCoreV3(other));
             }
@@ -139,7 +154,7 @@ public sealed class NuGetToolExtractor : IToolExtractor
         {
             // PackageSource ctor is (source, name) — first arg must be the feed URL.
             ordered.Add(Repository.Factory.GetCoreV3(new PackageSource(preferredSourceUrl, "ToolHost-resolved")));
-            foreach (PackageSource other in enabled)
+            foreach (var other in enabled)
             {
                 ordered.Add(Repository.Factory.GetCoreV3(other));
             }
@@ -156,7 +171,7 @@ public sealed class NuGetToolExtractor : IToolExtractor
                 $"Package '{packageId}' has no tools/ folder at '{toolsRoot}'. It is not a .NET tool package.");
         }
 
-        List<(NuGetFramework Framework, string RuntimeIdentifier, string Path)> candidates = new();
+        List<(NuGetFramework Framework, string RuntimeIdentifier, string Path)> candidates = [];
         foreach (var tfmFolder in Directory.EnumerateDirectories(toolsRoot))
         {
             NuGetFramework framework;
@@ -187,21 +202,16 @@ public sealed class NuGetToolExtractor : IToolExtractor
         }
 
         FrameworkReducer reducer = new();
-        IEnumerable<NuGetFramework> distinctFrameworks = candidates.Select(c => c.Framework).Distinct();
-        NuGetFramework? bestFramework = reducer.GetNearest(HostFramework, distinctFrameworks);
-        if (bestFramework is null)
-        {
-            throw new NoCompatibleToolException(packageId,
-                $"Package '{packageId}' has no tools folder compatible with the host framework {HostFramework.DotNetFrameworkName}.");
-        }
-
-        IEnumerable<(NuGetFramework Framework, string RuntimeIdentifier, string Path)> frameworkMatches = candidates
+        var distinctFrameworks = candidates.Select(c => c.Framework).Distinct();
+        var bestFramework = reducer.GetNearest(_hostFramework, distinctFrameworks) ?? throw new NoCompatibleToolException(packageId,
+                $"Package '{packageId}' has no tools folder compatible with the host framework {_hostFramework.DotNetFrameworkName}.");
+        var frameworkMatches = candidates
             .Where(c => c.Framework.Equals(bestFramework));
 
-        (NuGetFramework Framework, string RuntimeIdentifier, string Path) anyMatch = frameworkMatches
+        var anyMatch = frameworkMatches
             .FirstOrDefault(c => string.Equals(c.RuntimeIdentifier, "any", StringComparison.OrdinalIgnoreCase));
 
-        (NuGetFramework Framework, string RuntimeIdentifier, string Path) hostMatch = frameworkMatches
+        var hostMatch = frameworkMatches
             .FirstOrDefault(c => string.Equals(c.RuntimeIdentifier, _environment.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase));
 
         (NuGetFramework Framework, string RuntimeIdentifier, string Path) chosen;
@@ -222,6 +232,33 @@ public sealed class NuGetToolExtractor : IToolExtractor
         return (chosen.Path, chosen.Framework.GetShortFolderName(), chosen.RuntimeIdentifier);
     }
 
+    internal static NuGetFramework DetermineHostFramework(DotnetEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(environment);
+
+        var highestRuntime = environment.InstalledRuntimes
+            .Select(v => NuGetVersion.TryParse(v, out var parsed) ? parsed : null)
+            .Where(v => v is not null)
+            .Max();
+
+        if (highestRuntime is not null)
+        {
+            return NuGetFramework.Parse($"net{highestRuntime.Major}.{highestRuntime.Minor}");
+        }
+
+        var current = Environment.Version;
+        return NuGetFramework.Parse($"net{current.Major}.{current.Minor}");
+    }
+
+    private static ISettings LoadSettings(string? nugetConfigFile)
+    {
+        return string.IsNullOrEmpty(nugetConfigFile)
+            ? Settings.LoadDefaultSettings(root: null)
+            : Settings.LoadSpecificSettings(
+                Path.GetDirectoryName(nugetConfigFile) ?? Environment.CurrentDirectory,
+                Path.GetFileName(nugetConfigFile));
+    }
+
     private sealed class ForwardingNuGetLogger : NuGetLoggerBase
     {
         private readonly ILogger _inner;
@@ -229,7 +266,7 @@ public sealed class NuGetToolExtractor : IToolExtractor
 
         public override void Log(NuGetLogMessage message)
         {
-            LogLevel level = message.Level switch
+            var level = message.Level switch
             {
                 NuGetLogLevel.Debug => LogLevel.Debug,
                 NuGetLogLevel.Verbose => LogLevel.Debug,

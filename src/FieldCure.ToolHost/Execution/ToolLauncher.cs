@@ -33,7 +33,7 @@ public sealed class ToolLauncher : IToolLauncher
                 $"Package has no commands declared in DotnetToolSettings.xml at '{request.Layout.ToolsFolder}'.");
         }
 
-        DotnetToolCommand command = request.Layout.ToolSettings.Commands[0];
+        var command = request.Layout.ToolSettings.Commands[0];
         var entryPoint = Path.Combine(request.Layout.ToolsFolder, command.EntryPoint);
 
         if (!File.Exists(entryPoint))
@@ -75,7 +75,7 @@ public sealed class ToolLauncher : IToolLauncher
 
         if (request.AdditionalEnvironment is { Count: > 0 } extras)
         {
-            foreach (KeyValuePair<string, string?> kv in extras)
+            foreach (var kv in extras)
             {
                 if (kv.Value is null)
                 {
@@ -92,7 +92,7 @@ public sealed class ToolLauncher : IToolLauncher
 
         try
         {
-            Process? process = Process.Start(psi);
+            var process = Process.Start(psi);
             if (process is null)
             {
                 throw new ToolLaunchFailedException(

@@ -53,7 +53,7 @@ public sealed class ToolCacheIndexStore : IDisposable
             await using FileStream stream = new(_filePath, FileMode.Open, FileAccess.Read, FileShare.Read);
             try
             {
-                ToolCacheIndex? index = await JsonSerializer
+                var index = await JsonSerializer
                     .DeserializeAsync<ToolCacheIndex>(stream, JsonOptions, ct)
                     .ConfigureAwait(false);
 
@@ -118,8 +118,8 @@ public sealed class ToolCacheIndexStore : IDisposable
     {
         ArgumentNullException.ThrowIfNull(mutator);
 
-        ToolCacheIndex current = await LoadAsync(ct).ConfigureAwait(false);
-        ToolCacheIndex next = mutator(current);
+        var current = await LoadAsync(ct).ConfigureAwait(false);
+        var next = mutator(current);
         await SaveAsync(next, ct).ConfigureAwait(false);
         return next;
     }

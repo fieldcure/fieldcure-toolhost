@@ -1,5 +1,12 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
+## v0.1.4 (2026-05-19)
+
+### Fixed
+
+- **Tool arguments are now accepted and forwarded.** `fcdnx dotnetsay hello` no longer fails argument parsing before ToolHost starts. Unmatched tokens after the package id are treated as tool arguments and passed through to the launched process.
+- **Library re-pinned to `FieldCure.ToolHost` 0.1.4.** This pulls in runtime-aware tool TFM selection, cache constraint validation, and `--configfile` reuse during package download.
+
 ## v0.1.3 (2026-05-19)
 
 ### Fixed (via embedded library)

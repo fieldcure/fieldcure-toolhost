@@ -49,10 +49,10 @@ public sealed record DotnetEnvironment
                 "The 'dotnet' muxer was not found on PATH and DOTNET_ROOT is not set. " +
                 "Install the .NET runtime or set DOTNET_ROOT to its installation folder.");
 
-        IReadOnlyList<string> sdks = ParseSdkLines(await RunDotnetAsync(muxer, "--list-sdks", ct).ConfigureAwait(false));
-        IReadOnlyList<string> runtimes = ParseRuntimeLines(await RunDotnetAsync(muxer, "--list-runtimes", ct).ConfigureAwait(false));
+        var sdks = ParseSdkLines(await RunDotnetAsync(muxer, "--list-sdks", ct).ConfigureAwait(false));
+        var runtimes = ParseRuntimeLines(await RunDotnetAsync(muxer, "--list-runtimes", ct).ConfigureAwait(false));
 
-        ISettings settings = Settings.LoadDefaultSettings(root: null);
+        var settings = Settings.LoadDefaultSettings(root: null);
         var globalPackages = SettingsUtility.GetGlobalPackagesFolder(settings);
 
         return new DotnetEnvironment
@@ -99,7 +99,7 @@ public sealed record DotnetEnvironment
     internal static IReadOnlyList<string> ParseSdkLines(string output)
     {
         // Each line: "<version> [<install-path>]"
-        List<string> versions = new();
+        List<string> versions = [];
         foreach (var line in output.Split('\n'))
         {
             var trimmed = line.Trim();
@@ -121,7 +121,7 @@ public sealed record DotnetEnvironment
     {
         // Each line: "<framework> <version> [<install-path>]"
         // We only retain Microsoft.NETCore.App runtimes.
-        List<string> versions = new();
+        List<string> versions = [];
         foreach (var line in output.Split('\n'))
         {
             var trimmed = line.Trim();
@@ -157,11 +157,11 @@ public sealed record DotnetEnvironment
         };
         psi.ArgumentList.Add(arg);
 
-        using Process process = Process.Start(psi)
+        using var process = Process.Start(psi)
             ?? throw new InvalidOperationException($"Failed to start '{muxer} {arg}'.");
 
-        Task<string> stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
-        Task<string> stderrTask = process.StandardError.ReadToEndAsync(ct);
+        var stdoutTask = process.StandardOutput.ReadToEndAsync(ct);
+        var stderrTask = process.StandardError.ReadToEndAsync(ct);
         await process.WaitForExitAsync(ct).ConfigureAwait(false);
         var stdout = await stdoutTask.ConfigureAwait(false);
         var stderr = await stderrTask.ConfigureAwait(false);

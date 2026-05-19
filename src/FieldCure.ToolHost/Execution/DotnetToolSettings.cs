@@ -43,7 +43,7 @@ public sealed record DotnetToolSettings
             throw new InvalidDataException("DotnetToolSettings.xml is not well-formed XML.", ex);
         }
 
-        XElement root = doc.Root
+        var root = doc.Root
             ?? throw new InvalidDataException("DotnetToolSettings.xml has no root element.");
 
         if (!string.Equals(root.Name.LocalName, "DotNetCliTool", StringComparison.Ordinal))
@@ -52,7 +52,7 @@ public sealed record DotnetToolSettings
                 $"DotnetToolSettings.xml root must be <DotNetCliTool>, found <{root.Name.LocalName}>.");
         }
 
-        XElement? commandsElement = root.Elements()
+        var commandsElement = root.Elements()
             .FirstOrDefault(e => string.Equals(e.Name.LocalName, "Commands", StringComparison.Ordinal));
 
         if (commandsElement is null)
@@ -60,8 +60,8 @@ public sealed record DotnetToolSettings
             throw new InvalidDataException("DotnetToolSettings.xml is missing the <Commands> element.");
         }
 
-        List<DotnetToolCommand> commands = new();
-        foreach (XElement commandElement in commandsElement.Elements()
+        List<DotnetToolCommand> commands = [];
+        foreach (var commandElement in commandsElement.Elements()
             .Where(e => string.Equals(e.Name.LocalName, "Command", StringComparison.Ordinal)))
         {
             var name = RequireAttribute(commandElement, "Name");

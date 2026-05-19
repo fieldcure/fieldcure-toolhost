@@ -60,49 +60,60 @@ public sealed class NuGetPackageResolver : IPackageResolver
             return new PackageResolution(packageId, request.ExplicitVersion, "explicit", WasCacheHit: false);
         }
 
-        ToolCacheIndex index = await _indexStore.LoadAsync(ct).ConfigureAwait(false);
-        _ = index.Packages.TryGetValue(indexKey, out ToolPackageState? cachedState);
+        var index = await _indexStore.LoadAsync(ct).ConfigureAwait(false);
+        _ = index.Packages.TryGetValue(indexKey, out var cachedState);
+        var constraint = ParseVersionConstraint(request);
 
         switch (request.Policy)
         {
             case ToolVersionPolicy.CachedOnly:
-            {
-                if (cachedState is null)
                 {
-                    throw new PackageNotFoundException(packageId,
-                        "CachedOnly policy requires a previously cached version but the index has no entry.");
-                }
-                if (!NuGetVersion.TryParse(cachedState.PinnedVersion, out NuGetVersion? cached) || cached is null)
-                {
-                    throw new PackageNotFoundException(packageId,
-                        $"Cached pinned version '{cachedState.PinnedVersion}' is not a valid NuGet version.");
-                }
-                return new PackageResolution(packageId, cached, "cache", WasCacheHit: true);
-            }
-
-            case ToolVersionPolicy.CachedWithRefresh:
-            {
-                var withinTtl = cachedState is not null
-                                 && DateTimeOffset.UtcNow - cachedState.LastLatestCheckUtc < _options.RefreshTtl;
-                if (cachedState is not null && withinTtl
-                    && NuGetVersion.TryParse(cachedState.PinnedVersion, out NuGetVersion? cached) && cached is not null)
-                {
+                    if (cachedState is null)
+                    {
+                        throw new PackageNotFoundException(packageId,
+                            "CachedOnly policy requires a previously cached version but the index has no entry.");
+                    }
+                    if (!NuGetVersion.TryParse(cachedState.PinnedVersion, out var cached) || cached is null)
+                    {
+                        throw new PackageNotFoundException(packageId,
+                            $"Cached pinned version '{cachedState.PinnedVersion}' is not a valid NuGet version.");
+                    }
+                    if (!CachedVersionMatchesRequest(cached, constraint, request.AllowPrerelease))
+                    {
+                        throw new PackageNotFoundException(packageId,
+                            BuildCachedVersionMismatchMessage(cachedState.PinnedVersion, request));
+                    }
                     return new PackageResolution(packageId, cached, "cache", WasCacheHit: true);
                 }
-                return await QueryLatestAndUpdateIndexAsync(packageId, indexKey, request, cachedState, ct).ConfigureAwait(false);
-            }
+
+            case ToolVersionPolicy.CachedWithRefresh:
+                {
+                    var withinTtl = cachedState is not null
+                                     && DateTimeOffset.UtcNow - cachedState.LastLatestCheckUtc < _options.RefreshTtl;
+                    if (cachedState is not null && withinTtl
+                        && NuGetVersion.TryParse(cachedState.PinnedVersion, out var cached) && cached is not null
+                        && CachedVersionMatchesRequest(cached, constraint, request.AllowPrerelease))
+                    {
+                        return new PackageResolution(packageId, cached, "cache", WasCacheHit: true);
+                    }
+                    return await QueryLatestAndUpdateIndexAsync(packageId, indexKey, request, cachedState, constraint, ct).ConfigureAwait(false);
+                }
 
             case ToolVersionPolicy.AlwaysLatest:
             default:
-                return await QueryLatestAndUpdateIndexAsync(packageId, indexKey, request, cachedState, ct).ConfigureAwait(false);
+                return await QueryLatestAndUpdateIndexAsync(packageId, indexKey, request, cachedState, constraint, ct).ConfigureAwait(false);
         }
     }
 
+    /// <summary>
+    /// Queries configured NuGet sources for the best version satisfying the request and persists the result to the cache index.
+    /// </summary>
     private async Task<PackageResolution> QueryLatestAndUpdateIndexAsync(
         string packageId,
         string indexKey,
         PackageResolutionRequest request,
         ToolPackageState? previousState,
+        VersionConstraintFilter? constraint,
         CancellationToken ct)
     {
         if (_sources.Count == 0)
@@ -110,28 +121,21 @@ public sealed class NuGetPackageResolver : IPackageResolver
             throw new InvalidOperationException("No NuGet sources are configured. Check NuGet.Config or the supplied options.");
         }
 
-        VersionRange? constraint = null;
-        if (!string.IsNullOrWhiteSpace(request.VersionConstraint)
-            && !VersionRange.TryParse(request.VersionConstraint, out constraint))
-        {
-            throw new ArgumentException($"VersionConstraint '{request.VersionConstraint}' is not a valid NuGet version range.", nameof(request));
-        }
-
         using SourceCacheContext cacheContext = new();
         NuGetVersion? best = null;
         string? bestSource = null;
 
-        foreach (SourceRepository source in _sources)
+        foreach (var source in _sources)
         {
             try
             {
-                MetadataResource metadataResource = await source.GetResourceAsync<MetadataResource>(ct).ConfigureAwait(false);
+                var metadataResource = await source.GetResourceAsync<MetadataResource>(ct).ConfigureAwait(false);
 
-                IEnumerable<NuGetVersion> versions = await metadataResource
+                var versions = await metadataResource
                     .GetVersions(packageId, request.AllowPrerelease, includeUnlisted: false, cacheContext, _nugetLogger, ct)
                     .ConfigureAwait(false);
 
-                NuGetVersion? candidate = versions
+                var candidate = versions
                     .Where(v => request.AllowPrerelease || !v.IsPrerelease)
                     .Where(v => constraint is null || constraint.Satisfies(v))
                     .DefaultIfEmpty(null)
@@ -158,7 +162,7 @@ public sealed class NuGetPackageResolver : IPackageResolver
         await _indexStore.UpdateAsync(current =>
         {
             Dictionary<string, ToolPackageState> next = new(current.Packages, StringComparer.OrdinalIgnoreCase);
-            List<string> known = previousState?.KnownCachedVersions.ToList() ?? new List<string>();
+            var known = previousState?.KnownCachedVersions.ToList() ?? [];
             var normalized = best.ToNormalizedString();
             if (!known.Contains(normalized, StringComparer.OrdinalIgnoreCase))
             {
@@ -178,9 +182,140 @@ public sealed class NuGetPackageResolver : IPackageResolver
         return new PackageResolution(packageId, best, bestSource, WasCacheHit: false);
     }
 
+    /// <summary>
+    /// Returns whether a pinned cache version is valid for the current prerelease and version-constraint request.
+    /// </summary>
+    internal static bool CachedVersionMatchesRequest(
+        NuGetVersion cached,
+        VersionConstraintFilter? constraint,
+        bool allowPrerelease)
+    {
+        ArgumentNullException.ThrowIfNull(cached);
+
+        if (!allowPrerelease && cached.IsPrerelease)
+        {
+            return false;
+        }
+
+        return constraint is null || constraint.Satisfies(cached);
+    }
+
+    /// <summary>
+    /// Parses the request's optional version constraint into the internal predicate used by metadata and cache filtering.
+    /// </summary>
+    private static VersionConstraintFilter? ParseVersionConstraint(PackageResolutionRequest request)
+    {
+        var raw = request.VersionConstraint?.Trim();
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return null;
+        }
+
+        if (TryParseFloatingConstraint(raw, out var floatingConstraint))
+        {
+            return floatingConstraint;
+        }
+
+        if (!VersionRange.TryParse(raw, out var constraint))
+        {
+            throw new ArgumentException($"VersionConstraint '{request.VersionConstraint}' is not a valid NuGet version range.", nameof(request));
+        }
+
+        return new VersionConstraintFilter(constraint);
+    }
+
+    /// <summary>
+    /// Parses simple floating constraints such as <c>2.*</c> and <c>2.1.*</c>.
+    /// </summary>
+    private static bool TryParseFloatingConstraint(string raw, out VersionConstraintFilter? constraint)
+    {
+        constraint = null;
+        if (!raw.Contains('*', StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        string[] parts = raw.Split('.');
+        if (parts.Length is < 2 or > 3 || !string.Equals(parts[^1], "*", StringComparison.Ordinal))
+        {
+            throw new ArgumentException($"VersionConstraint '{raw}' is not a supported floating version constraint.", nameof(raw));
+        }
+
+        List<int> prefix = [];
+        foreach (string part in parts[..^1])
+        {
+            if (!int.TryParse(part, out int value) || value < 0)
+            {
+                throw new ArgumentException($"VersionConstraint '{raw}' is not a supported floating version constraint.", nameof(raw));
+            }
+            prefix.Add(value);
+        }
+
+        constraint = new VersionConstraintFilter(prefix.ToArray());
+        return true;
+    }
+
+    /// <summary>
+    /// Predicate wrapper for NuGet version ranges and the simple floating constraints ToolHost documents.
+    /// </summary>
+    internal sealed class VersionConstraintFilter
+    {
+        private readonly VersionRange? _range;
+        private readonly IReadOnlyList<int>? _floatingPrefix;
+
+        /// <summary>Creates a filter backed by a NuGet version range.</summary>
+        public VersionConstraintFilter(VersionRange range)
+        {
+            ArgumentNullException.ThrowIfNull(range);
+            _range = range;
+        }
+
+        /// <summary>Creates a filter backed by a major or major/minor floating-version prefix.</summary>
+        public VersionConstraintFilter(IReadOnlyList<int> floatingPrefix)
+        {
+            ArgumentNullException.ThrowIfNull(floatingPrefix);
+            _floatingPrefix = floatingPrefix;
+        }
+
+        /// <summary>Returns whether <paramref name="version"/> satisfies this filter.</summary>
+        public bool Satisfies(NuGetVersion version)
+        {
+            ArgumentNullException.ThrowIfNull(version);
+
+            if (_floatingPrefix is not null)
+            {
+                return _floatingPrefix.Count switch
+                {
+                    1 => version.Major == _floatingPrefix[0],
+                    2 => version.Major == _floatingPrefix[0] && version.Minor == _floatingPrefix[1],
+                    _ => false,
+                };
+            }
+
+            return _range is null || _range.Satisfies(version);
+        }
+    }
+
+    /// <summary>Builds a diagnostic message explaining why a cached version cannot satisfy the current request.</summary>
+    private static string BuildCachedVersionMismatchMessage(string cachedVersion, PackageResolutionRequest request)
+    {
+        if (!string.IsNullOrWhiteSpace(request.VersionConstraint))
+        {
+            return $"Cached pinned version '{cachedVersion}' does not satisfy VersionConstraint '{request.VersionConstraint}'.";
+        }
+
+        if (!request.AllowPrerelease)
+        {
+            return $"Cached pinned version '{cachedVersion}' is prerelease but prerelease versions are not allowed.";
+        }
+
+        return $"Cached pinned version '{cachedVersion}' does not satisfy the current request.";
+    }
+
+    /// <summary>Builds source repositories from NuGet settings plus any explicit source overrides.</summary>
     private static List<SourceRepository> BuildSources(NuGetPackageResolverOptions options)
     {
-        ISettings settings = string.IsNullOrEmpty(options.NuGetConfigFile)
+        var settings = string.IsNullOrEmpty(options.NuGetConfigFile)
             ? Settings.LoadDefaultSettings(root: null)
             : Settings.LoadSpecificSettings(Path.GetDirectoryName(options.NuGetConfigFile) ?? Environment.CurrentDirectory,
                                             Path.GetFileName(options.NuGetConfigFile));
@@ -194,7 +329,7 @@ public sealed class NuGetPackageResolver : IPackageResolver
             // second is the display name. Reversing them yields a SourceRepository
             // backed by the literal string "restricted", which silently returns
             // empty version lists and surfaces as PackageNotFoundException.
-            packageSources = new List<PackageSource> { new(options.RestrictToSource, "restricted") };
+            packageSources = [new(options.RestrictToSource, "restricted")];
         }
         else
         {
@@ -216,11 +351,14 @@ public sealed class NuGetPackageResolver : IPackageResolver
     private sealed class NuGetLoggerAdapter : NuGetLoggerBase
     {
         private readonly ILogger _inner;
+
+        /// <summary>Creates an adapter that forwards NuGet log messages to <see cref="ILogger"/>.</summary>
         public NuGetLoggerAdapter(ILogger inner) => _inner = inner;
 
+        /// <summary>Translates and forwards a NuGet log message synchronously.</summary>
         public override void Log(NuGetLogMessage message)
         {
-            LogLevel level = message.Level switch
+            var level = message.Level switch
             {
                 NuGetLogLevel.Debug => LogLevel.Debug,
                 NuGetLogLevel.Verbose => LogLevel.Debug,
@@ -233,6 +371,7 @@ public sealed class NuGetPackageResolver : IPackageResolver
             _inner.Log(level, "{Message}", message.Message);
         }
 
+        /// <summary>Translates and forwards a NuGet log message asynchronously.</summary>
         public override Task LogAsync(NuGetLogMessage message)
         {
             Log(message);

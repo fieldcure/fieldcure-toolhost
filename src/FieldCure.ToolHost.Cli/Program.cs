@@ -1,6 +1,4 @@
-using System.CommandLine;
-
-namespace FieldCure.ToolHost.Cli;
+﻿namespace FieldCure.ToolHost.Cli;
 
 /// <summary>Entry point for the <c>fcdnx</c> CLI.</summary>
 public static class Program
@@ -9,8 +7,8 @@ public static class Program
     /// <param name="args">Raw command-line arguments.</param>
     public static Task<int> Main(string[] args)
     {
-        RootCommand root = DnxCommand.Build();
-        ParseResult parseResult = root.Parse(args);
+        var root = DnxCommand.Build();
+        var parseResult = root.Parse(args);
         return parseResult.InvokeAsync();
     }
 }

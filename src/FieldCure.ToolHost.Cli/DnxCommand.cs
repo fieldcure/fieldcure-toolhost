@@ -81,6 +81,7 @@ public static class DnxCommand
             osOpt,
             policyOpt,
         };
+        root.TreatUnmatchedTokensAsErrors = false;
 
         root.SetAction((parseResult, ct) => RunAsync(
             parseResult,
@@ -117,9 +118,9 @@ public static class DnxCommand
         CancellationToken ct)
     {
         var verbosity = parseResult.GetValue(verbosityOpt) ?? VerbosityMapper.DefaultLevel;
-        LogLevel minLevel = VerbosityMapper.Map(verbosity);
+        var minLevel = VerbosityMapper.Map(verbosity);
 
-        using ILoggerFactory loggerFactory = LoggerFactory.Create(b =>
+        using var loggerFactory = LoggerFactory.Create(b =>
         {
             _ = b.SetMinimumLevel(minLevel);
             _ = b.AddSimpleConsole(o =>
@@ -130,8 +131,8 @@ public static class DnxCommand
             });
         });
 
-        ILogger<DnxLiteRunner> runnerLogger = loggerFactory.CreateLogger<DnxLiteRunner>();
-        ILogger cliLogger = loggerFactory.CreateLogger("fcdnx");
+        var runnerLogger = loggerFactory.CreateLogger<DnxLiteRunner>();
+        var cliLogger = loggerFactory.CreateLogger("fcdnx");
 
         try
         {
@@ -179,7 +180,10 @@ public static class DnxCommand
                 IgnoreFailedSources = parseResult.GetValue(ignoreFailedSourcesOpt),
             };
             NuGetPackageResolver resolver = new(resolverOptions, indexStore, loggerFactory.CreateLogger<NuGetPackageResolver>());
-            NuGetToolExtractor extractor = new(environment, loggerFactory.CreateLogger<NuGetToolExtractor>());
+            NuGetToolExtractor extractor = new(
+                environment,
+                parseResult.GetValue(configFileOpt),
+                loggerFactory.CreateLogger<NuGetToolExtractor>());
             FieldCure.ToolHost.Execution.ToolLauncher launcher = new(loggerFactory.CreateLogger<FieldCure.ToolHost.Execution.ToolLauncher>());
 
             DnxLiteRunner runner = new(environment, resolver, extractor, launcher, runnerLogger);
@@ -194,7 +198,7 @@ public static class DnxCommand
                 AllowRollForward = parseResult.GetValue(allowRollForwardOpt),
             };
 
-            using Process process = await runner.StartAsync(invocation, ct).ConfigureAwait(false);
+            using var process = await runner.StartAsync(invocation, ct).ConfigureAwait(false);
             return await ForwardStdioAsync(process, ct).ConfigureAwait(false);
         }
         catch (PackageNotFoundException ex)

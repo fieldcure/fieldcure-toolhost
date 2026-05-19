@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 
 using FieldCure.ToolHost.Execution;
 using FieldCure.ToolHost.Extraction;
@@ -86,13 +86,13 @@ public sealed class DnxLiteRunner
             AllowPrerelease: request.AllowPrerelease,
             ExplicitVersion: request.ExplicitVersion);
 
-        PackageResolution resolution = await _resolver.ResolveAsync(resolutionRequest, ct).ConfigureAwait(false);
+        var resolution = await _resolver.ResolveAsync(resolutionRequest, ct).ConfigureAwait(false);
 
         _logger.LogInformation(
             "Resolved {PackageId} -> {Version} (source={Source}, cacheHit={CacheHit})",
             resolution.PackageId, resolution.Version.ToNormalizedString(), resolution.SourceUrl, resolution.WasCacheHit);
 
-        ExtractedToolLayout layout = await _extractor.EnsureExtractedAsync(resolution, ct).ConfigureAwait(false);
+        var layout = await _extractor.EnsureExtractedAsync(resolution, ct).ConfigureAwait(false);
 
         LaunchRequest launchRequest = new()
         {

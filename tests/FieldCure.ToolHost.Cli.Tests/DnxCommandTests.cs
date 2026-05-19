@@ -1,4 +1,4 @@
-using System.CommandLine;
+﻿using System.CommandLine;
 using FieldCure.ToolHost.Cli.Output;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -21,9 +21,9 @@ public sealed class DnxCommandTests
     [Xunit.Fact]
     public void Build_ProducesParseableHelp()
     {
-        RootCommand root = DnxCommand.Build();
+        var root = DnxCommand.Build();
 
-        ParseResult parseResult = root.Parse(new[] { "--help" });
+        var parseResult = root.Parse(new[] { "--help" });
 
         _ = parseResult.Errors.Should().BeEmpty();
     }
@@ -31,9 +31,20 @@ public sealed class DnxCommandTests
     [Xunit.Fact]
     public void Build_ParsesPackageArg()
     {
-        RootCommand root = DnxCommand.Build();
-        ParseResult parseResult = root.Parse(new[] { "dotnetsay" });
+        var root = DnxCommand.Build();
+        var parseResult = root.Parse(new[] { "dotnetsay" });
         _ = parseResult.Errors.Should().BeEmpty();
+    }
+
+    [Xunit.Fact]
+    public void Build_AllowsToolArgumentsAsUnmatchedTokens()
+    {
+        var root = DnxCommand.Build();
+
+        var parseResult = root.Parse(new[] { "dotnetsay", "hello", "--loud" });
+
+        _ = parseResult.Errors.Should().BeEmpty();
+        _ = parseResult.UnmatchedTokens.Should().Equal("hello", "--loud");
     }
 }
 

@@ -1,5 +1,13 @@
 # Release Notes — FieldCure.ToolHost
 
+## v0.1.4 (2026-05-19)
+
+### Fixed
+
+- **Runtime TFM selection now follows the installed host runtime.** `NuGetToolExtractor` no longer assumes `net10.0` when selecting `tools/{tfm}/{rid}`. It derives the host framework from the highest installed `Microsoft.NETCore.App` runtime reported by `DotnetEnvironment`, falling back to the current process runtime only if runtime detection data is unavailable.
+- **Cache hits honor the current version request.** `CachedOnly` and `CachedWithRefresh` no longer return a pinned prerelease when prerelease is disallowed, or a pinned version outside the requested `VersionConstraint`.
+- **Downloads reuse the supplied NuGet.Config.** When the CLI is invoked with `--configfile`, the extractor now loads the same config file for package download that the resolver used for metadata resolution.
+
 ## v0.1.3 (2026-05-19)
 
 ### Fixed

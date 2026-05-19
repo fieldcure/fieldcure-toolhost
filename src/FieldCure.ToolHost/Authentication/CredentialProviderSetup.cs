@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 
 using NuGet.Credentials;
 
@@ -35,7 +35,7 @@ public static class CredentialProviderSetup
             return;
         }
 
-        INuGetLogger nugetLogger = logger is null
+        var nugetLogger = logger is null
             ? NuGet.Common.NullLogger.Instance
             : new ForwardingLogger(logger);
 
@@ -54,7 +54,7 @@ public static class CredentialProviderSetup
         /// <summary>Translates a NuGet log level and forwards the message synchronously.</summary>
         public override void Log(NuGetLogMessage message)
         {
-            LogLevel level = message.Level switch
+            var level = message.Level switch
             {
                 NuGetLogLevel.Debug => LogLevel.Debug,
                 NuGetLogLevel.Verbose => LogLevel.Debug,

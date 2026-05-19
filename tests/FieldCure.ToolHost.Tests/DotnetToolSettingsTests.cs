@@ -1,4 +1,4 @@
-using FieldCure.ToolHost.Execution;
+﻿using FieldCure.ToolHost.Execution;
 
 using FluentAssertions;
 
@@ -21,7 +21,7 @@ public sealed class DotnetToolSettingsTests
         DotnetToolSettings settings = DotnetToolSettings.Parse(xml);
 
         _ = settings.Commands.Should().HaveCount(1);
-        DotnetToolCommand command = settings.Commands[0];
+        var command = settings.Commands[0];
         _ = command.Name.Should().Be("dotnetsay");
         _ = command.EntryPoint.Should().Be("dotnetsay.dll");
         _ = command.Runner.Should().Be("dotnet");
@@ -39,7 +39,7 @@ public sealed class DotnetToolSettingsTests
             </DotNetCliTool>
             """;
 
-        DotnetToolCommand command = DotnetToolSettings.Parse(xml).Commands[0];
+        var command = DotnetToolSettings.Parse(xml).Commands[0];
 
         _ = command.UsesDotnetRunner.Should().BeFalse();
         _ = command.Runner.Should().Be("executable");
@@ -66,7 +66,7 @@ public sealed class DotnetToolSettingsTests
     [Xunit.Fact]
     public void Parse_MissingRoot_Throws()
     {
-        string xml = "<NotARoot/>";
+        var xml = "<NotARoot/>";
         System.Action act = () => DotnetToolSettings.Parse(xml);
         _ = act.Should().Throw<InvalidDataException>().WithMessage("*DotNetCliTool*");
     }
@@ -74,7 +74,7 @@ public sealed class DotnetToolSettingsTests
     [Xunit.Fact]
     public void Parse_NoCommandsElement_Throws()
     {
-        string xml = "<DotNetCliTool Version=\"1\"></DotNetCliTool>";
+        var xml = "<DotNetCliTool Version=\"1\"></DotNetCliTool>";
         System.Action act = () => DotnetToolSettings.Parse(xml);
         _ = act.Should().Throw<InvalidDataException>().WithMessage("*Commands*");
     }
@@ -82,7 +82,7 @@ public sealed class DotnetToolSettingsTests
     [Xunit.Fact]
     public void Parse_NoCommandEntries_Throws()
     {
-        string xml = "<DotNetCliTool Version=\"1\"><Commands></Commands></DotNetCliTool>";
+        var xml = "<DotNetCliTool Version=\"1\"><Commands></Commands></DotNetCliTool>";
         System.Action act = () => DotnetToolSettings.Parse(xml);
         _ = act.Should().Throw<InvalidDataException>().WithMessage("*no*Command*");
     }
@@ -90,7 +90,7 @@ public sealed class DotnetToolSettingsTests
     [Xunit.Fact]
     public void Parse_MissingAttribute_Throws()
     {
-        string xml = """
+        var xml = """
             <DotNetCliTool Version="1">
               <Commands>
                 <Command Name="x" Runner="dotnet" />
@@ -104,7 +104,7 @@ public sealed class DotnetToolSettingsTests
     [Xunit.Fact]
     public void Parse_Malformed_Throws()
     {
-        string xml = "<DotNetCliTool";
+        var xml = "<DotNetCliTool";
         System.Action act = () => DotnetToolSettings.Parse(xml);
         _ = act.Should().Throw<InvalidDataException>();
     }
