@@ -20,6 +20,19 @@ distributed through channels where users may have only the .NET *runtime* (the
 Microsoft Store, MSIX installers, runtime-only Docker images, etc.), `dnx` is
 unavailable. `FieldCure.ToolHost` fills that gap with the same UX.
 
+## Prerequisites
+
+This is a tool **runner**, not a runtime distributor. A .NET 8 or .NET 10
+runtime must be present on the host — ToolHost discovers the `dotnet` muxer
+through `PATH` or `DOTNET_ROOT` and uses it to launch tools. It deliberately
+does not ship a runtime of its own.
+
+If you are shipping software to environments where users may not already have
+a runtime (fresh PCs receiving your MS Store app, minimal Docker images, etc.),
+you are responsible for bundling one alongside your application or guiding the
+user to install it. ToolHost's job ends at "find and use the runtime that's
+available."
+
 ## Two ways to use it
 
 ### As a library (primary)

@@ -41,7 +41,13 @@ await tool.WaitForExitAsync();
 
 ## Requirements
 
-- .NET 8 or .NET 10 runtime (no SDK needed)
+- **A .NET 8 or .NET 10 runtime must be installed on the host machine.**
+  ToolHost locates the `dotnet` muxer via `PATH` or `DOTNET_ROOT` and
+  invokes it to launch tools — it does **not** ship a runtime of its
+  own. Applications distributed to environments where users may not
+  have a pre-installed runtime (MS Store, MSIX on fresh PCs, minimal
+  containers) need to bundle one with the application or prompt the
+  user to install it. The .NET SDK is **not** required.
 
 ## See Also
 
