@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.1.2</Version>
+    <Version>0.1.3</Version>
     <AssemblyName>FieldCure.ToolHost.Cli</AssemblyName>
     <RootNamespace>FieldCure.ToolHost.Cli</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -28,7 +28,7 @@
     <PackageTags>dnx;dotnet-tool;nuget;fcdnx;tool-runner;sdk-less;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>v0.1.2 — Library re-pinned to FieldCure.ToolHost 0.1.2 (adds VersionConstraint and AdditionalEnvironment pass-through on ToolInvocationRequest). CLI surface unchanged. See RELEASENOTES.ToolHost.Cli.md on GitHub for the full notes.</PackageReleaseNotes>
+    <PackageReleaseNotes>v0.1.3 — Library re-pinned to FieldCure.ToolHost 0.1.3 (hotfix: PackageSource ctor argument order; --source / --add-source were silently broken in 0.1.0–0.1.2). CLI surface unchanged. See RELEASENOTES.ToolHost.Cli.md on GitHub for the full notes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

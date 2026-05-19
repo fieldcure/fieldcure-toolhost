@@ -137,7 +137,8 @@ public sealed class NuGetToolExtractor : IToolExtractor
         }
         else
         {
-            ordered.Add(Repository.Factory.GetCoreV3(new PackageSource("ToolHost-resolved", preferredSourceUrl)));
+            // PackageSource ctor is (source, name) — first arg must be the feed URL.
+            ordered.Add(Repository.Factory.GetCoreV3(new PackageSource(preferredSourceUrl, "ToolHost-resolved")));
             foreach (PackageSource other in enabled)
             {
                 ordered.Add(Repository.Factory.GetCoreV3(other));

@@ -1,5 +1,14 @@
 # Release Notes — FieldCure.ToolHost
 
+## v0.1.3 (2026-05-19)
+
+### Fixed
+
+- **`RestrictToSource` and `AdditionalSources` were silently broken.** `NuGetPackageResolver.BuildSources` passed the `PackageSource` constructor's `(string source, string name)` arguments in reverse — the literal strings `"restricted"` and `"additional-N"` ended up in the *URL* slot, producing `SourceRepository` instances backed by invalid endpoints. `MetadataResource.GetVersions(...)` returned empty version lists, surfacing as `PackageNotFoundException` even for packages that exist and are listed on the configured feed. Any caller setting either option in v0.1.0–0.1.2 should upgrade.
+- **`NuGetToolExtractor` fallback source** — the same `(name, source)` ordering bug was present on the fallback path used when the resolved source URL is not among the user's configured NuGet sources. This path runs whenever resolution succeeded via `AdditionalSources` or `RestrictToSource` against a feed the extractor cannot see in `NuGet.Config` — common for embedders that bootstrap their own source list on fresh installs without a user-level `NuGet.Config`.
+
+Argument order is now `new PackageSource(url, name)` matching the NuGet API. No public API change; one-line fix on each of three sites.
+
 ## v0.1.2 (2026-05-18)
 
 ### Added

@@ -190,7 +190,11 @@ public sealed class NuGetPackageResolver : IPackageResolver
 
         if (!string.IsNullOrEmpty(options.RestrictToSource))
         {
-            packageSources = new List<PackageSource> { new("restricted", options.RestrictToSource) };
+            // PackageSource ctor is (source, name) — first arg is the feed URL,
+            // second is the display name. Reversing them yields a SourceRepository
+            // backed by the literal string "restricted", which silently returns
+            // empty version lists and surfaces as PackageNotFoundException.
+            packageSources = new List<PackageSource> { new(options.RestrictToSource, "restricted") };
         }
         else
         {
@@ -199,7 +203,7 @@ public sealed class NuGetPackageResolver : IPackageResolver
             {
                 if (!packageSources.Any(s => string.Equals(s.Source, extra, StringComparison.OrdinalIgnoreCase)))
                 {
-                    packageSources.Add(new PackageSource($"additional-{packageSources.Count}", extra));
+                    packageSources.Add(new PackageSource(extra, $"additional-{packageSources.Count}"));
                 }
             }
         }

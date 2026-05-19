@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
+## v0.1.3 (2026-05-19)
+
+### Fixed (via embedded library)
+
+- **Library re-pinned to `FieldCure.ToolHost` 0.1.3.** This release fixes a library bug where `--source` and `--add-source` were silently inoperative: the resolver passed `PackageSource` constructor arguments in reverse, producing `SourceRepository` instances pointing at the literal strings `"restricted"` / `"additional-N"` instead of the supplied URLs, which surfaced as `PackageNotFoundException`. CLI users of either flag on v0.1.0–0.1.2 saw spurious "package not found" failures; the CLI passed the values through correctly, the library was at fault. CLI surface itself unchanged.
+
 ## v0.1.2 (2026-05-18)
 
 ### Changed
