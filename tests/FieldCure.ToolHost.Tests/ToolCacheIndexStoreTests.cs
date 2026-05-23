@@ -118,4 +118,64 @@ public sealed class ToolCacheIndexStoreTests : IDisposable
         var reloaded = await store.LoadAsync();
         _ = reloaded.Packages.Should().ContainKey("new.pkg");
     }
+
+    [Xunit.Fact]
+    public async Task EvictAsync_RemovesEntryAndReturnsTrue()
+    {
+        using ToolCacheIndexStore store = new(_indexPath);
+        await SavePackageAsync(store, "Demo.Tool", "1.1.0");
+
+        var removed = await store.EvictAsync("Demo.Tool");
+
+        _ = removed.Should().BeTrue();
+        var reloaded = await store.LoadAsync();
+        _ = reloaded.Packages.Should().NotContainKey("demo.tool");
+    }
+
+    [Xunit.Fact]
+    public async Task EvictAsync_IsCaseInsensitive()
+    {
+        // Persisted keys are lower-cased; the caller shouldn't have to know that. Mixed-case
+        // input must still hit the entry — otherwise the manual "Update to latest" UX breaks
+        // for anyone who happens to type the package id with its display casing.
+        using ToolCacheIndexStore store = new(_indexPath);
+        await SavePackageAsync(store, "Demo.Tool", "1.1.0");
+
+        var removed = await store.EvictAsync("DEMO.TOOL");
+
+        _ = removed.Should().BeTrue();
+        var reloaded = await store.LoadAsync();
+        _ = reloaded.Packages.Should().BeEmpty();
+    }
+
+    [Xunit.Fact]
+    public async Task EvictAsync_MissingEntry_ReturnsFalseAndPreservesOthers()
+    {
+        using ToolCacheIndexStore store = new(_indexPath);
+        await SavePackageAsync(store, "keep.me", "2.0.0");
+
+        var removed = await store.EvictAsync("not.cached");
+
+        _ = removed.Should().BeFalse();
+        var reloaded = await store.LoadAsync();
+        _ = reloaded.Packages.Should().ContainKey("keep.me");
+    }
+
+    /// <summary>Persists a single package entry into the index for test setup.</summary>
+    private static Task SavePackageAsync(ToolCacheIndexStore store, string packageId, string version)
+    {
+        return store.SaveAsync(new ToolCacheIndex
+        {
+            SchemaVersion = ToolCacheIndex.CurrentSchemaVersion,
+            Packages = new Dictionary<string, ToolPackageState>(StringComparer.OrdinalIgnoreCase)
+            {
+                [packageId.ToLowerInvariant()] = new()
+                {
+                    KnownCachedVersions = new[] { version },
+                    PinnedVersion = version,
+                    LastLatestCheckUtc = DateTimeOffset.UtcNow,
+                },
+            },
+        });
+    }
 }

@@ -124,6 +124,45 @@ public sealed class ToolCacheIndexStore : IDisposable
         return next;
     }
 
+    /// <summary>
+    /// Removes a single package's cached state from the index so the next resolve for that
+    /// package falls through to a fresh NuGet metadata query regardless of TTL. Idempotent:
+    /// a missing entry is a no-op. The lookup is case-insensitive — callers don't have to
+    /// know the index normalizes ids to lowercase.
+    /// </summary>
+    /// <remarks>
+    /// Intended for host UIs that surface a manual "Update to latest" action: clearing one
+    /// pin without flushing the entire index lets users bypass the
+    /// <see cref="ToolVersionPolicy.CachedWithRefresh"/> wait without affecting unrelated
+    /// packages or losing the rest of the cache.
+    /// </remarks>
+    /// <param name="packageId">NuGet package id (case-insensitive).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns><see langword="true"/> if an entry was removed; <see langword="false"/> if no entry existed.</returns>
+    public async Task<bool> EvictAsync(string packageId, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(packageId);
+
+        var key = packageId.ToLowerInvariant();
+        var removed = false;
+
+        _ = await UpdateAsync(current =>
+        {
+            if (!current.Packages.ContainsKey(key))
+                return current;
+
+            var next = new Dictionary<string, ToolPackageState>(current.Packages, StringComparer.OrdinalIgnoreCase);
+            removed = next.Remove(key);
+            return new ToolCacheIndex
+            {
+                SchemaVersion = ToolCacheIndex.CurrentSchemaVersion,
+                Packages = next,
+            };
+        }, ct).ConfigureAwait(false);
+
+        return removed;
+    }
+
     /// <summary>Releases the synchronization primitive backing concurrent access.</summary>
     public void Dispose() => _gate.Dispose();
 }
