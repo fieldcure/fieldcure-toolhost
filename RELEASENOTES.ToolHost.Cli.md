@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
+## v0.1.5 (2026-05-23)
+
+### Changed
+
+- **Library re-pinned to `FieldCure.ToolHost` 0.1.5.** Adds `ToolCacheIndexStore.EvictAsync(packageId, ct)` for host UIs that surface a manual "update to latest" action against the `CachedWithRefresh` TTL — bypasses the 24h wait for a single package without flushing the rest of the cache. CLI surface itself unchanged: no new subcommand, no new flag. Version bump exists to keep CLI and library on a single shared version line — same pattern as v0.1.2 (library-only addition, lockstep release).
+
 ## v0.1.4 (2026-05-19)
 
 ### Fixed

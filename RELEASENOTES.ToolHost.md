@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost
 
+## v0.1.5 (2026-05-23)
+
+### Added
+
+- **`ToolCacheIndexStore.EvictAsync(packageId, ct)`** — first-class API for removing one package's pinned state from `_index.json` so the next resolve falls through to a fresh NuGet metadata query regardless of the `CachedWithRefresh` TTL. Idempotent (missing entries return `false` without throwing) and case-insensitive on the package id. Intended for host UIs that expose a manual "update to latest" action — clearing a single pin lets users bypass the 24h cache wait without losing the rest of the cache or flushing the entire index. Previously the same effect required hosts to call `UpdateAsync` with a mutator that knew the schema details (lowercase keys, `OrdinalIgnoreCase` dictionary, `ToolPackageState`, `SchemaVersion`); `EvictAsync` encapsulates that.
+
 ## v0.1.4 (2026-05-19)
 
 ### Fixed

@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.1.4</Version>
+    <Version>0.1.5</Version>
     <AssemblyName>FieldCure.ToolHost</AssemblyName>
     <RootNamespace>FieldCure.ToolHost</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -23,7 +23,7 @@
     <PackageTags>dnx;dotnet-tool;nuget;tool-runner;sdk-less;runtime;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>v0.1.4 — Quality round: CLI now forwards tool arguments, extractor selects tools against the installed runtime TFM, cache hits honor version/prerelease constraints, and downloads reuse the supplied NuGet.Config. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
+    <PackageReleaseNotes>v0.1.5 — Adds ToolCacheIndexStore.EvictAsync(packageId) for host UIs that surface a manual "update to latest" action against the CachedWithRefresh TTL. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
