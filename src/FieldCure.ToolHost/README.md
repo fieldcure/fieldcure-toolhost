@@ -31,6 +31,29 @@ Console.Write(await tool.StandardOutput.ReadToEndAsync());
 await tool.WaitForExitAsync();
 ```
 
+## Environment Isolation
+
+ToolHost matches `dnx` by default: launched tools inherit the current process
+environment, and `AdditionalEnvironment` is applied on top. Hosts that execute
+untrusted tools or stdio MCP servers can opt out:
+
+```csharp
+var envVars = ToolEnvironment.GetDefaultEnvironmentVariables();
+envVars["MY_TOOL_API_KEY"] = apiKey;
+
+using Process tool = await runner.StartAsync(new ToolInvocationRequest
+{
+    PackageId = "My.Tool",
+    ToolArguments = Array.Empty<string>(),
+    InheritEnvironmentVariables = false,
+    AdditionalEnvironment = envVars,
+});
+```
+
+`GetDefaultEnvironmentVariables()` keeps platform basics such as `PATH`, home
+directories, temp directories, and system roots without forwarding unrelated
+tokens from the parent process.
+
 ## Version Policy
 
 | Policy | Behavior |

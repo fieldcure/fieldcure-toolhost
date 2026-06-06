@@ -52,6 +52,11 @@ public sealed class ToolLauncher : IToolLauncher
             WorkingDirectory = request.Layout.ToolsFolder,
         };
 
+        if (!request.InheritEnvironmentVariables)
+        {
+            psi.Environment.Clear();
+        }
+
         if (command.UsesDotnetRunner)
         {
             psi.FileName = request.DotnetMuxerPath;

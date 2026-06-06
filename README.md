@@ -79,12 +79,15 @@ In scope:
 - Three resolution policies: `AlwaysLatest`, `CachedWithRefresh`, `CachedOnly`
 - Authenticated feeds via standard NuGet credential providers
 - Platform-agnostic .NET tools (`tools/{tfm}/any/`)
+- Opt-in child-process environment isolation for hosts that run untrusted tools
+  or MCP servers
 
 Out of scope and staying that way:
 
 - Tool installation/uninstallation (`dotnet tool install/update/uninstall`)
 - Replacing or wrapping the `dotnet` muxer
-- Any feature `dnx` does not have
+- Features outside `dnx` parity, except narrow host-safety controls such as
+  environment inheritance isolation
 
 See the **Lifecycle / Sunset Policy** section of [ROADMAP.md](ROADMAP.md). Feature
 requests outside `dnx` parity will be politely closed.

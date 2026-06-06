@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
+## Unreleased
+
+### Added
+
+- **Environment isolation flags.** `--no-inherit-env` prevents the launched tool from receiving the full ambient environment, while seeding it with ToolHost's curated default baseline. `--env KEY=VALUE` and `--unset-env KEY` apply explicit child-process environment overrides. Default behavior remains unchanged and continues to match `dnx`: tools inherit the caller's environment.
+
 ## v0.1.5 (2026-05-23)
 
 ### Changed

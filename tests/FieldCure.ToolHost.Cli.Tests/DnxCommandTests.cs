@@ -46,6 +46,53 @@ public sealed class DnxCommandTests
         _ = parseResult.Errors.Should().BeEmpty();
         _ = parseResult.UnmatchedTokens.Should().Equal("hello", "--loud");
     }
+
+    [Xunit.Fact]
+    public void Build_ParsesEnvironmentOptions()
+    {
+        var root = DnxCommand.Build();
+
+        var parseResult = root.Parse(new[]
+        {
+            "--no-inherit-env",
+            "--env", "ONE=1",
+            "--unset-env", "TWO",
+            "dotnetsay",
+        });
+
+        _ = parseResult.Errors.Should().BeEmpty();
+    }
+
+    [Xunit.Fact]
+    public void TryBuildAdditionalEnvironment_CombinesSetAndUnsetTokens()
+    {
+        var ok = DnxCommand.TryBuildAdditionalEnvironment(
+            ["ONE=1", "EMPTY="],
+            ["TWO"],
+            out var env,
+            out var error);
+
+        _ = ok.Should().BeTrue();
+        _ = error.Should().BeNull();
+        _ = env.Should().NotBeNull();
+        _ = env!["ONE"].Should().Be("1");
+        _ = env["EMPTY"].Should().Be("");
+        _ = env["TWO"].Should().BeNull();
+    }
+
+    [Xunit.Fact]
+    public void TryBuildAdditionalEnvironment_RejectsMalformedEnvToken()
+    {
+        var ok = DnxCommand.TryBuildAdditionalEnvironment(
+            ["MISSING_EQUALS"],
+            [],
+            out var env,
+            out var error);
+
+        _ = ok.Should().BeFalse();
+        _ = env.Should().BeNull();
+        _ = error.Should().Contain("Expected KEY=VALUE");
+    }
 }
 
 public sealed class VerbosityMapperTests

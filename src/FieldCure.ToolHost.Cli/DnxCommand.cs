@@ -45,6 +45,20 @@ public static class DnxCommand
         Option<bool> noHttpCacheOpt = new("--no-http-cache") { Description = "Disable HTTP cache only." };
         Option<bool> interactiveOpt = new("--interactive") { Description = "Allow interactive credential prompts." };
         Option<bool> allowRollForwardOpt = new("--allow-roll-forward") { Description = "Permit .NET runtime roll-forward." };
+        Option<bool> noInheritEnvOpt = new("--no-inherit-env")
+        {
+            Description = "Launch the tool without inheriting ambient environment variables.",
+        };
+        Option<string[]> envOpt = new("--env")
+        {
+            Description = "Set an environment variable for the launched tool (KEY=VALUE). May be repeated.",
+            AllowMultipleArgumentsPerToken = false,
+        };
+        Option<string[]> unsetEnvOpt = new("--unset-env")
+        {
+            Description = "Remove an environment variable from the launched tool environment. May be repeated.",
+            AllowMultipleArgumentsPerToken = false,
+        };
         Option<string?> verbosityOpt = new("--verbosity")
         {
             Description = "Verbosity: q[uiet], m[inimal], n[ormal], d[etailed], diag[nostic].",
@@ -75,6 +89,9 @@ public static class DnxCommand
             noHttpCacheOpt,
             interactiveOpt,
             allowRollForwardOpt,
+            noInheritEnvOpt,
+            envOpt,
+            unsetEnvOpt,
             verbosityOpt,
             frameworkOpt,
             archOpt,
@@ -94,6 +111,9 @@ public static class DnxCommand
             ignoreFailedSourcesOpt,
             interactiveOpt,
             allowRollForwardOpt,
+            noInheritEnvOpt,
+            envOpt,
+            unsetEnvOpt,
             verbosityOpt,
             policyOpt,
             ct));
@@ -113,6 +133,9 @@ public static class DnxCommand
         Option<bool> ignoreFailedSourcesOpt,
         Option<bool> interactiveOpt,
         Option<bool> allowRollForwardOpt,
+        Option<bool> noInheritEnvOpt,
+        Option<string[]> envOpt,
+        Option<string[]> unsetEnvOpt,
         Option<string?> verbosityOpt,
         Option<string?> policyOpt,
         CancellationToken ct)
@@ -157,6 +180,19 @@ public static class DnxCommand
                 return ExitCodes.UsageError;
             }
 
+            if (!TryBuildAdditionalEnvironment(
+                parseResult.GetValue(envOpt) ?? Array.Empty<string>(),
+                parseResult.GetValue(unsetEnvOpt) ?? Array.Empty<string>(),
+                out var additionalEnvironment,
+                out var envError))
+            {
+                cliLogger.LogError("{Error}", envError);
+                return ExitCodes.UsageError;
+            }
+
+            var inheritEnvironmentVariables = !parseResult.GetValue(noInheritEnvOpt);
+            var launchEnvironment = BuildLaunchEnvironment(inheritEnvironmentVariables, additionalEnvironment);
+
             var interactive = parseResult.GetValue(interactiveOpt);
             CredentialProviderSetup.Register(interactive, cliLogger);
 
@@ -196,6 +232,8 @@ public static class DnxCommand
                 ExplicitVersion = explicitVersion,
                 AllowPrerelease = parseResult.GetValue(prereleaseOpt),
                 AllowRollForward = parseResult.GetValue(allowRollForwardOpt),
+                InheritEnvironmentVariables = inheritEnvironmentVariables,
+                AdditionalEnvironment = launchEnvironment,
             };
 
             using var process = await runner.StartAsync(invocation, ct).ConfigureAwait(false);
@@ -245,6 +283,77 @@ public static class DnxCommand
         return at < 0
             ? (raw, null)
             : (raw[..at], raw[(at + 1)..]);
+    }
+
+    /// <summary>Builds child-process environment overrides from CLI tokens.</summary>
+    internal static bool TryBuildAdditionalEnvironment(
+        IReadOnlyList<string> envTokens,
+        IReadOnlyList<string> unsetTokens,
+        out IReadOnlyDictionary<string, string?>? additionalEnvironment,
+        out string? error)
+    {
+        var comparer = OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        Dictionary<string, string?>? values = null;
+
+        foreach (var token in envTokens)
+        {
+            var equals = token.IndexOf('=');
+            if (equals <= 0)
+            {
+                additionalEnvironment = null;
+                error = $"Invalid --env value '{token}'. Expected KEY=VALUE.";
+                return false;
+            }
+
+            var key = token[..equals];
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                additionalEnvironment = null;
+                error = "Invalid --env value. Environment variable name cannot be empty.";
+                return false;
+            }
+
+            values ??= new Dictionary<string, string?>(comparer);
+            values[key] = token[(equals + 1)..];
+        }
+
+        foreach (var key in unsetTokens)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                additionalEnvironment = null;
+                error = "Invalid --unset-env value. Environment variable name cannot be empty.";
+                return false;
+            }
+
+            values ??= new Dictionary<string, string?>(comparer);
+            values[key] = null;
+        }
+
+        additionalEnvironment = values;
+        error = null;
+        return true;
+    }
+
+    private static IReadOnlyDictionary<string, string?>? BuildLaunchEnvironment(
+        bool inheritEnvironmentVariables,
+        IReadOnlyDictionary<string, string?>? additionalEnvironment)
+    {
+        if (inheritEnvironmentVariables)
+        {
+            return additionalEnvironment;
+        }
+
+        var launchEnvironment = ToolEnvironment.GetDefaultEnvironmentVariables();
+        if (additionalEnvironment is { Count: > 0 })
+        {
+            foreach (var kvp in additionalEnvironment)
+            {
+                launchEnvironment[kvp.Key] = kvp.Value;
+            }
+        }
+
+        return launchEnvironment;
     }
 
     /// <summary>Forwards child stdout/stderr to the parent console line-by-line, closes the child's stdin to signal EOF, and waits for exit. Returns the child's exit code.</summary>

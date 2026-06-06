@@ -100,6 +100,7 @@ public sealed class DnxLiteRunner
             Arguments = request.ToolArguments,
             DotnetMuxerPath = _environment.DotnetMuxerPath,
             AllowRollForward = request.AllowRollForward,
+            InheritEnvironmentVariables = request.InheritEnvironmentVariables,
             AdditionalEnvironment = request.AdditionalEnvironment,
         };
 
@@ -136,6 +137,18 @@ public sealed record ToolInvocationRequest
 
     /// <summary>Whether to allow .NET runtime roll-forward to a newer major version.</summary>
     public bool AllowRollForward { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the launched tool inherits the current process environment.
+    /// Defaults to <see langword="true"/> to match normal process and <c>dnx</c> behavior.
+    /// </summary>
+    /// <remarks>
+    /// Set this to <see langword="false"/> when launching untrusted tools or MCP servers that should
+    /// only receive explicitly supplied environment variables. Hosts that disable inheritance should
+    /// usually seed <see cref="AdditionalEnvironment"/> with
+    /// <see cref="ToolEnvironment.GetDefaultEnvironmentVariables"/> and then add tool-specific secrets.
+    /// </remarks>
+    public bool InheritEnvironmentVariables { get; init; } = true;
 
     /// <summary>Additional NuGet source URIs beyond <c>NuGet.Config</c>. Equivalent to <c>dnx --add-source</c>.</summary>
     public IReadOnlyList<string>? AdditionalSources { get; init; }

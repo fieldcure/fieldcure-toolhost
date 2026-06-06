@@ -18,6 +18,7 @@ fcdnx dotnetsay@2.1.0
 fcdnx --prerelease MyTool.Preview
 fcdnx --add-source https://feed.example.com/v3/index.json MyCorp.Tool
 fcdnx --interactive YourCorp.Tool
+fcdnx --no-inherit-env --env MY_TOOL_API_KEY=secret MyTool
 fcdnx dotnetsay -- "Hello from a runtime-only host!"
 ```
 
@@ -30,11 +31,19 @@ fcdnx dotnetsay -- "Hello from a runtime-only host!"
 | `--source <URI>` | Restrict to one source |
 | `--add-source <URI>` | Add a source (repeatable) |
 | `--interactive` | Allow credential plugin prompts |
+| `--no-inherit-env` | Do not forward the full ambient environment to the tool |
+| `--env <KEY=VALUE>` | Set an environment variable for the launched tool |
+| `--unset-env <KEY>` | Remove an environment variable from the launched tool |
 | `--verbosity <LEVEL>` | `q`/`m`/`n`/`d`/`diag` |
 | `--policy <POLICY>` | `AlwaysLatest` (default), `CachedWithRefresh`, `CachedOnly` |
 | `--` | Everything after goes to the tool |
 
 Run `fcdnx --help` for the full list.
+
+By default, tools inherit the `fcdnx` process environment to match `dnx` and
+normal process behavior. Use `--no-inherit-env` for untrusted tools or MCP
+servers; `fcdnx` then supplies only a curated platform baseline plus variables
+you pass with `--env`.
 
 ## Exit Codes
 

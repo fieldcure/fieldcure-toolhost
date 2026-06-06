@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost
 
+## Unreleased
+
+### Added
+
+- **Opt-in child-process environment isolation.** `ToolInvocationRequest.InheritEnvironmentVariables` and `LaunchRequest.InheritEnvironmentVariables` now default to `true` for `dnx` compatibility, but embedders can set them to `false` when launching untrusted tools or MCP servers that should only receive explicit environment values. `ToolEnvironment.GetDefaultEnvironmentVariables()` returns a curated platform baseline (`PATH`, home/profile, temp, and system-directory variables) for hosts that disable full inheritance but still need normal process startup behavior.
+
 ## v0.1.5 (2026-05-23)
 
 ### Added

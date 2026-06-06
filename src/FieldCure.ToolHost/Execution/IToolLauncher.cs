@@ -34,6 +34,12 @@ public sealed record LaunchRequest
     public bool AllowRollForward { get; init; }
 
     /// <summary>
+    /// Gets a value indicating whether the launched tool inherits the current process environment.
+    /// Defaults to <see langword="true"/> to match normal process and <c>dnx</c> behavior.
+    /// </summary>
+    public bool InheritEnvironmentVariables { get; init; } = true;
+
+    /// <summary>
     /// Optional environment variables to set/clear on the child process.
     /// Values of <c>null</c> remove the variable.
     /// </summary>
