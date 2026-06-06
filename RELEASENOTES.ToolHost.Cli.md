@@ -1,6 +1,6 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
-## Unreleased
+## v0.1.6 (2026-06-06)
 
 ### Added
 

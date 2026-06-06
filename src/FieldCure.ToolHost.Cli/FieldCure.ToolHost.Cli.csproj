@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.1.5</Version>
+    <Version>0.1.6</Version>
     <AssemblyName>FieldCure.ToolHost.Cli</AssemblyName>
     <RootNamespace>FieldCure.ToolHost.Cli</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -28,7 +28,7 @@
     <PackageTags>dnx;dotnet-tool;nuget;fcdnx;tool-runner;sdk-less;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>v0.1.5 — Library re-pinned to FieldCure.ToolHost 0.1.5, which adds ToolCacheIndexStore.EvictAsync for first-class single-package cache invalidation. CLI surface unchanged. See RELEASENOTES.ToolHost.Cli.md on GitHub for the full notes.</PackageReleaseNotes>
+    <PackageReleaseNotes>v0.1.6 — Adds environment isolation flags --no-inherit-env, --env KEY=VALUE, and --unset-env KEY for running tools without forwarding the ambient environment. Default behavior is unchanged and still matches dnx. See RELEASENOTES.ToolHost.Cli.md on GitHub for the full notes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
