@@ -1,8 +1,4 @@
-﻿using System.Diagnostics;
-
-using FieldCure.ToolHost;
-
-namespace FieldCure.ToolHost.Samples.Demo;
+﻿namespace FieldCure.ToolHost.Samples.Demo;
 
 internal static class Program
 {
