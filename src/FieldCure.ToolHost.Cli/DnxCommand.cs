@@ -146,6 +146,12 @@ public static class DnxCommand
         using var loggerFactory = LoggerFactory.Create(b =>
         {
             _ = b.SetMinimumLevel(minLevel);
+            // fcdnx's own diagnostics MUST go to stderr: when it hosts a stdio MCP server,
+            // the child's stdout is the JSON-RPC channel that fcdnx forwards verbatim. Any
+            // fcdnx log on stdout would interleave with JSON-RPC frames and corrupt the
+            // protocol, so route every level to stderr. (The hosted server controls its
+            // own streams and already logs to stderr.)
+            _ = b.AddConsole(o => o.LogToStandardErrorThreshold = LogLevel.Trace);
             _ = b.AddSimpleConsole(o =>
             {
                 o.SingleLine = true;

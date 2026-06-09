@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost
 
+## v0.1.7 (2026-06-09)
+
+### Changed
+
+- **Lockstep release with `FieldCure.ToolHost.Cli` v0.1.7.** No functional change to this library. The CLI release fixes a stdout-pollution bug (fcdnx's own logs corrupting the JSON-RPC channel when hosting stdio MCP servers); the version bump keeps the CLI and library on a single shared version line — same pattern as v0.1.5.
+
 ## v0.1.6 (2026-06-06)
 
 ### Added

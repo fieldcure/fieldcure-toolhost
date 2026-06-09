@@ -1,5 +1,15 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
+## v0.1.7 (2026-06-09)
+
+### Fixed
+
+- **fcdnx diagnostics no longer corrupt the stdout JSON-RPC channel.** When `fcdnx` hosts a stdio MCP server, the child's stdout is the JSON-RPC transport that `fcdnx` forwards verbatim. Previously `fcdnx`'s own console logging (NuGet resolution messages such as `info: ...NuGetPackageResolver... Resolved <pkg> -> <ver>`) was written to stdout, interleaving with JSON-RPC frames and causing MCP hosts to report "failed to connect." All `fcdnx` log output now goes to stderr at every level, leaving stdout clean for the protocol. The hosted server's own logging is unaffected (it already controls its own streams).
+
+### Changed
+
+- **Library re-pinned to `FieldCure.ToolHost` 0.1.7.** Lockstep version bump — no functional library change; keeps CLI and library on a single shared version line.
+
 ## v0.1.6 (2026-06-06)
 
 ### Added
