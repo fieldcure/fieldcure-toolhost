@@ -1,5 +1,15 @@
 # Release Notes — FieldCure.ToolHost.Cli (`fcdnx`)
 
+## v0.1.8 (2026-06-09)
+
+### Fixed
+
+- **stdin is now forwarded to the launched tool; stdio is bridged with raw byte copies.** Long-lived stdio servers — most importantly MCP servers — read JSON-RPC requests from stdin for the entire session. Previously `fcdnx` closed the child's stdin immediately after launch (and forwarded stdout line-by-line), so an MCP server saw end-of-input at startup and shut down right after connecting ("Server transport closed unexpectedly… process exiting early"). `fcdnx` now pumps its own stdin into the child and only closes the child's stdin when its own stdin reaches EOF (i.e. the host disconnects). stdout/stderr are copied verbatim as raw bytes rather than re-emitted line-by-line, preserving JSON-RPC framing exactly. Together with the v0.1.7 stderr-logging fix, this makes `fcdnx` able to host stdio MCP servers end-to-end. Verified with a full `initialize` + `tools/list` round-trip.
+
+### Changed
+
+- **Library re-pinned to `FieldCure.ToolHost` 0.1.8.** Lockstep version bump — no functional library change; keeps CLI and library on a single shared version line.
+
 ## v0.1.7 (2026-06-09)
 
 ### Fixed

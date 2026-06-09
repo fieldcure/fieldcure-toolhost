@@ -362,38 +362,92 @@ public static class DnxCommand
         return launchEnvironment;
     }
 
-    /// <summary>Forwards child stdout/stderr to the parent console line-by-line, closes the child's stdin to signal EOF, and waits for exit. Returns the child's exit code.</summary>
+    /// <summary>
+    /// Bidirectionally bridges this process's stdio to the child, then waits for exit.
+    /// Returns the child's exit code.
+    /// </summary>
+    /// <remarks>
+    /// Uses raw byte-stream copies (not line-based) so the bytes are forwarded verbatim — essential
+    /// for long-lived stdio servers like MCP, whose JSON-RPC framing must not be re-encoded or have
+    /// newlines normalized. Crucially, our stdin is pumped into the child's stdin for the lifetime of
+    /// the connection (an MCP host streams requests this way); the child's stdin is only closed once
+    /// OUR stdin reaches EOF (the host disconnected), which is the correct end-of-input signal. The
+    /// previous implementation closed the child's stdin immediately, which made stdio servers see EOF
+    /// at startup and shut down right after connecting.
+    /// </remarks>
     private static async Task<int> ForwardStdioAsync(Process process, CancellationToken ct)
     {
-        process.OutputDataReceived += (_, e) =>
-        {
-            if (e.Data is not null)
-            {
-                Console.Out.WriteLine(e.Data);
-            }
-        };
-        process.ErrorDataReceived += (_, e) =>
-        {
-            if (e.Data is not null)
-            {
-                Console.Error.WriteLine(e.Data);
-            }
-        };
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
+        // Child output → our stdout/stderr. Our stdout is the JSON-RPC channel for an MCP host, so it
+        // must carry only the child's stdout bytes (fcdnx's own logging goes to stderr — see logger setup).
+        var pumpOut = PumpAsync(process.StandardOutput.BaseStream, Console.OpenStandardOutput(), ct);
+        var pumpErr = PumpAsync(process.StandardError.BaseStream, Console.OpenStandardError(), ct);
 
-        // Signal EOF on the child's stdin so tools that read it (rare) don't hang.
-        // Future enhancement: forward Console.In line-by-line.
+        // Our stdin → child stdin, closing the child's stdin only when our stdin ends. Runs in the
+        // background: an MCP host keeps stdin open for the whole session, so we must not await this
+        // before the process exits or we would hang forever.
+        var pumpIn = PumpStdinAsync(Console.OpenStandardInput(), process.StandardInput.BaseStream, ct);
+        _ = pumpIn; // fire-and-forget; abandoned when the process exits
+
+        await process.WaitForExitAsync(ct).ConfigureAwait(false);
+
+        // Drain any final child output, but never block on stdin.
         try
         {
-            process.StandardInput.Close();
+            await Task.WhenAll(pumpOut, pumpErr).WaitAsync(TimeSpan.FromSeconds(2), ct).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // Best effort — don't hang shutdown on a slow drain.
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutting down — ignore.
+        }
+
+        return process.ExitCode;
+    }
+
+    /// <summary>Copies <paramref name="from"/> to <paramref name="to"/> verbatim, flushing each chunk, until EOF.</summary>
+    private static async Task PumpAsync(Stream from, Stream to, CancellationToken ct)
+    {
+        var buffer = new byte[16 * 1024];
+        try
+        {
+            int read;
+            while ((read = await from.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+            {
+                await to.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
+                await to.FlushAsync(ct).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Shutting down — ignore.
         }
         catch (IOException)
         {
-            // Stream already closed — ignore.
+            // Peer closed the pipe — ignore.
         }
+    }
 
-        await process.WaitForExitAsync(ct).ConfigureAwait(false);
-        return process.ExitCode;
+    /// <summary>Pumps our stdin into the child's stdin, then closes the child's stdin on EOF.</summary>
+    private static async Task PumpStdinAsync(Stream from, Stream childStdin, CancellationToken ct)
+    {
+        try
+        {
+            await PumpAsync(from, childStdin, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            // Our stdin ended (host disconnected) — signal end-of-input to the child.
+            try
+            {
+                childStdin.Close();
+            }
+            catch (IOException)
+            {
+                // Already closed — ignore.
+            }
+        }
     }
 }

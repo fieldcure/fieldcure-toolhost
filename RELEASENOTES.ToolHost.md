@@ -1,5 +1,11 @@
 # Release Notes — FieldCure.ToolHost
 
+## v0.1.8 (2026-06-09)
+
+### Changed
+
+- **Lockstep release with `FieldCure.ToolHost.Cli` v0.1.8.** No functional change to this library. The CLI release adds stdin forwarding and raw stdio bridging so long-lived stdio servers (e.g. MCP) stay connected; the version bump keeps the CLI and library on a single shared version line.
+
 ## v0.1.7 (2026-06-09)
 
 ### Changed

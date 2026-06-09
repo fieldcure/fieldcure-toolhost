@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <LangVersion>latest</LangVersion>
-    <Version>0.1.7</Version>
+    <Version>0.1.8</Version>
     <AssemblyName>FieldCure.ToolHost</AssemblyName>
     <RootNamespace>FieldCure.ToolHost</RootNamespace>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -23,7 +23,7 @@
     <PackageTags>dnx;dotnet-tool;nuget;tool-runner;sdk-less;runtime;cli</PackageTags>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.png</PackageIcon>
-    <PackageReleaseNotes>v0.1.7 — Lockstep release with the fcdnx CLI (FieldCure.ToolHost.Cli v0.1.7), which routes its own diagnostics to stderr so stdout stays a clean JSON-RPC channel when hosting stdio MCP servers. This library has no functional change; the version bump keeps the CLI and library on a single shared version line. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
+    <PackageReleaseNotes>v0.1.8 — Lockstep release with the fcdnx CLI (FieldCure.ToolHost.Cli v0.1.8), which now forwards stdin and bridges stdio with raw byte copies so long-lived stdio servers (e.g. MCP) stay connected. This library has no functional change; the version bump keeps the CLI and library on a single shared version line. See RELEASENOTES.ToolHost.md on GitHub for the full notes.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
